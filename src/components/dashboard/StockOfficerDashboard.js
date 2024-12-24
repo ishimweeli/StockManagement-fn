@@ -30,7 +30,8 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  Divider
 } from '@mui/material';
 import {
   Notifications as NotificationsIcon,
@@ -39,7 +40,9 @@ import {
   ChevronRight,
   Logout,
   Person,
-  ShoppingCart
+  ShoppingCart,
+  Warning,
+  Info
 } from '@mui/icons-material';
 
 const StockOfficerDashboard = () => {
@@ -47,6 +50,7 @@ const StockOfficerDashboard = () => {
   const [items, setItems] = useState([]);
   const [notifications, setNotifications] = useState([]);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
+  const [viewedNotifications, setViewedNotifications] = useState(new Set());
   const [sellForm, setSellForm] = useState({ itemId: '', quantity: '' });
   const [currentPage, setCurrentPage] = useState(1);
   const [sellDialogOpen, setSellDialogOpen] = useState(false);
@@ -60,9 +64,44 @@ const StockOfficerDashboard = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const displayedItems = items.slice(startIndex, startIndex + itemsPerPage);
 
+  // Fetch notifications
+  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+
+  const fetchNotifications = async () => {
+    try {
+      const response = await fetch(`${API_BASE_URL}/notifications`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      const data = await response.json();
+      
+      if (data.success) {
+        const newNotifications = data.data;
+        setNotifications(newNotifications);
+        
+        // Check for new notifications (less than 1 minute ago)
+        const now = new Date();
+        const newUnreadCount = newNotifications.filter(notification => {
+          const notifDate = new Date(notification.created_at);
+          const timeDiff = (now - notifDate) / 1000 / 60; // difference in minutes
+          return timeDiff < 1 && !viewedNotifications.has(notification.id);
+        }).length;
+        
+        setUnreadNotifications(newUnreadCount);
+      }
+    } catch (err) {
+      console.error('Failed to fetch notifications:', err);
+    }
+  };
+
   useEffect(() => {
     loadItems();
-    setUnreadNotifications(2); // Simulate initial notifications
+    fetchNotifications();
+    
+    // Set up polling for notifications every 30 seconds
+    const interval = setInterval(fetchNotifications, 30000);
+    return () => clearInterval(interval);
   }, []);
 
   const loadItems = async () => {
@@ -81,13 +120,10 @@ const StockOfficerDashboard = () => {
     try {
       const response = await api.sellItem(sellForm.itemId, sellForm.quantity, token);
       if (response.success) {
-        if (response.data?.notification) {
-          setNotifications([...notifications, response.data.notification]);
-          setUnreadNotifications(prev => prev + 1);
-        }
         setSellForm({ itemId: '', quantity: '' });
         setSellDialogOpen(false);
         loadItems();
+        fetchNotifications(); // Fetch notifications after selling
       }
     } catch (err) {
       console.error('Failed to sell item:', err);
@@ -96,8 +132,27 @@ const StockOfficerDashboard = () => {
 
   const handleNotificationClick = (event) => {
     setNotificationAnchorEl(event.currentTarget);
-    if (unreadNotifications > 0) {
-      setUnreadNotifications(0);
+    
+    // Mark all current notifications as viewed
+    const newViewedNotifications = new Set(viewedNotifications);
+    notifications.forEach(notification => {
+      newViewedNotifications.add(notification.id);
+    });
+    setViewedNotifications(newViewedNotifications);
+    setUnreadNotifications(0);
+  };
+
+  const formatNotificationTime = (timeStr) => {
+    const date = new Date(timeStr);
+    return date.toLocaleString();
+  };
+
+  const getNotificationIcon = (type) => {
+    switch (type.toLowerCase()) {
+      case 'low stock':
+        return <Warning color="warning" />;
+      default:
+        return <Info color="info" />;
     }
   };
 
@@ -170,15 +225,31 @@ const StockOfficerDashboard = () => {
               horizontal: 'right',
             }}
           >
-            <Box sx={{ width: 300, p: 2 }}>
+            <Box sx={{ width: 350, maxHeight: 400, overflow: 'auto' }}>
+              <Typography variant="h6" sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                Notifications
+              </Typography>
               {notifications.length > 0 ? (
                 notifications.map((notification, index) => (
-                  <Typography key={index} sx={{ p: 1 }}>
-                    {notification}
-                  </Typography>
+                  <Box key={notification.id} sx={{ p: 2, borderBottom: 1, borderColor: 'divider' }}>
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                      {getNotificationIcon(notification.type)}
+                      <Typography variant="subtitle2" color="primary">
+                        {notification.type}
+                      </Typography>
+                    </Box>
+                    <Typography variant="body2" sx={{ mb: 1 }}>
+                      {notification.message}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {formatNotificationTime(notification.created_at)}
+                    </Typography>
+                  </Box>
                 ))
               ) : (
-                <Typography color="text.secondary">No notifications</Typography>
+                <Typography sx={{ p: 2 }} color="text.secondary">
+                  No notifications
+                </Typography>
               )}
             </Box>
           </Popover>
@@ -244,7 +315,6 @@ const StockOfficerDashboard = () => {
         </Card>
       </Container>
 
-      {/* Sell Item Dialog */}
       <Dialog 
         open={sellDialogOpen} 
         onClose={() => setSellDialogOpen(false)}
