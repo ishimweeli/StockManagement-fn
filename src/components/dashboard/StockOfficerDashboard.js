@@ -66,6 +66,7 @@ const StockOfficerDashboard = () => {
 
   // Fetch notifications
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+  const storedUsername = localStorage.getItem("username");
 
   const fetchNotifications = async () => {
     try {
@@ -122,7 +123,7 @@ const StockOfficerDashboard = () => {
       if (response.success) {
         setSellForm({ itemId: '', quantity: '' });
         setSellDialogOpen(false);
-        loadItems();
+        await loadItems();
         fetchNotifications(); // Fetch notifications after selling
       }
     } catch (err) {
@@ -189,7 +190,7 @@ const StockOfficerDashboard = () => {
               <NotificationsIcon />
             </Badge>
           </IconButton>
-
+          <h3> {storedUsername}   </h3>
           <IconButton
             color="inherit"
             onClick={handleProfileClick}
@@ -204,9 +205,6 @@ const StockOfficerDashboard = () => {
             open={Boolean(profileAnchorEl)}
             onClose={handleProfileClose}
           >
-            <MenuItem onClick={handleProfileClose}>
-              <Person sx={{ mr: 1 }} /> Profile
-            </MenuItem>
             <MenuItem onClick={handleLogout}>
               <Logout sx={{ mr: 1 }} /> Logout
             </MenuItem>

@@ -72,6 +72,7 @@ const AdminDashboard = () => {
   const startIndex = (currentPage - 1) * itemsPerPage;
   const displayedItems = items.slice(startIndex, startIndex + itemsPerPage);
   const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+  const storedUsername = localStorage.getItem("username");
 
 
   const validateForm = (item) => {
@@ -326,7 +327,7 @@ const AdminDashboard = () => {
               <NotificationsIcon />
             </Badge>
           </IconButton>
-
+          <h3>{storedUsername}</h3>
           <IconButton
             color="inherit"
             onClick={handleProfileClick}
@@ -341,9 +342,6 @@ const AdminDashboard = () => {
             open={Boolean(profileAnchorEl)}
             onClose={handleProfileClose}
           >
-            <MenuItem onClick={handleProfileClose}>
-              <Person sx={{ mr: 1 }} /> Profile
-            </MenuItem>
             <MenuItem onClick={handleLogout}>
               <Logout sx={{ mr: 1 }} /> Logout
             </MenuItem>
