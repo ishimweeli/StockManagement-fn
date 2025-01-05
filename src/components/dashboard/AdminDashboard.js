@@ -71,7 +71,7 @@ const AdminDashboard = () => {
   const totalPages = Math.ceil(items.length / itemsPerPage);
   const startIndex = (currentPage - 1) * itemsPerPage;
   const displayedItems = items.slice(startIndex, startIndex + itemsPerPage);
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+  const API_BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:8000';
   const storedUsername = localStorage.getItem("username");
 
 

@@ -65,7 +65,7 @@ const StockOfficerDashboard = () => {
   const displayedItems = items.slice(startIndex, startIndex + itemsPerPage);
 
   // Fetch notifications
-  const API_BASE_URL = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8080';
+  const API_BASE_URL = process.env.REACT_APP_BASE_URL || 'http://localhost:8000';
   const storedUsername = localStorage.getItem("username");
 
   const fetchNotifications = async () => {
